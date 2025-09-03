@@ -1,6 +1,7 @@
 /**
  * Cloudflare Workers 单文件部署版本
  * 包含所有功能、HTML、CSS 和 JavaScript
+ * 优化点：1. 后台登录页面优化 2. 书签分类显示优化
  */
 
 // 备用随机 SVG 图标
@@ -28,12 +29,27 @@ const fallbackSVGIcons = [
 // 所有 CSS 样式整合到这里
 const allStyles = `
 /* 全局样式 */
+:root {
+    --primary-color: #6c63ff;
+    --primary-light: #8a7fff;
+    --primary-dark: #534dc4;
+    --secondary-color: #17a2b8;
+    --danger-color: #dc3545;
+    --light-gray: #f8f9fa;
+    --mid-gray: #e9ecef;
+    --dark-gray: #495057;
+    --border-color: #dee2e6;
+    --shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    --transition: all 0.3s ease;
+}
+
 body {
     font-family: 'Noto Sans SC', sans-serif;
     margin: 0;
-    padding: 10px;
-    background-color: #f8f9fa;
-    color: #212529;
+    padding: 0;
+    background-color: var(--light-gray);
+    color: var(--dark-gray);
+    line-height: 1.6;
 }
 
 .container {
@@ -42,7 +58,7 @@ body {
     background-color: #fff;
     padding: 20px;
     border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow);
 }
 
 h1 {
@@ -65,98 +81,131 @@ table {
 }
 
 th, td {
-    border: 1px solid #dee2e6;
-    padding: 10px;
+    border: 1px solid var(--border-color);
+    padding: 12px 15px;
     text-align: left;
-    color: #495057;
 }
 
 th {
-    background-color: #f2f2f2;
+    background-color: var(--mid-gray);
     font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 10;
 }
 
 tr:nth-child(even) {
     background-color: #f9f9f9;
 }
 
+tr:hover {
+    background-color: #f1f1f1;
+}
+
 /* 按钮样式 */
 button {
-    background-color: #6c63ff;
+    background-color: var(--primary-color);
     color: #fff;
     border: none;
     padding: 10px 15px;
     border-radius: 4px;
     cursor: pointer;
     font-size: 1rem;
-    transition: background-color 0.3s;
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
 }
 
 button:hover {
-    background-color: #534dc4;
+    background-color: var(--primary-dark);
+    transform: translateY(-1px);
+}
+
+button:active {
+    transform: translateY(0);
 }
 
 .edit-btn {
-    background-color: #17a2b8;
+    background-color: var(--secondary-color);
+}
+
+.edit-btn:hover {
+    background-color: #138496;
 }
 
 .del-btn {
-    background-color: #dc3545;
+    background-color: var(--danger-color);
+}
+
+.del-btn:hover {
+    background-color: #c82333;
 }
 
 /* 表单样式 */
-input[type="text"], input[type="number"] {
-    padding: 10px;
-    border: 1px solid #ced4da;
+input[type="text"], input[type="number"], input[type="password"], select, textarea {
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
     border-radius: 4px;
     font-size: 1rem;
     outline: none;
     margin-bottom: 5px;
-    transition: border-color 0.2s;
+    transition: var(--transition);
+    width: 100%;
+    box-sizing: border-box;
 }
 
-input[type="text"]:focus, input[type="number"]:focus {
-    border-color: #80bdff;
-    box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+input[type="text"]:focus, input[type="number"]:focus, 
+input[type="password"]:focus, select:focus, textarea:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(108, 99, 255, 0.25);
 }
 
 /* 分页样式 */
 .pagination {
     text-align: center;
     margin-top: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
 }
 
 .pagination button {
-    margin: 0 5px;
-    background-color: #e9ecef;
-    color: #495057;
-    border: 1px solid #ced4da;
+    margin: 0 3px;
+    background-color: var(--mid-gray);
+    color: var(--dark-gray);
+    border: 1px solid var(--border-color);
+    padding: 6px 12px;
 }
 
 .pagination button:hover {
-    background-color: #dee2e6;
+    background-color: #d0d7dc;
 }
 
 /* 分类筛选和页码选择器样式 */
 .config-filter {
     margin-bottom: 1rem;
+    display: inline-block;
+    width: auto;
 }
 
 .form-select {
     padding: 8px 12px;
-    border: 1px solid #ced4da;
+    border: 1px solid var(--border-color);
     border-radius: 4px;
     font-size: 1rem;
-    color: #495057;
+    color: var(--dark-gray);
     background-color: #fff;
     background-clip: padding-box;
-    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    transition: var(--transition);
 }
 
 .form-select:focus {
-    border-color: #80bdff;
+    border-color: var(--primary-color);
     outline: 0;
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    box-shadow: 0 0 0 0.2rem rgba(108, 99, 255, 0.25);
 }
 
 .page-size-selector {
@@ -164,6 +213,8 @@ input[type="text"]:focus, input[type="number"]:focus {
     align-items: center;
     gap: 0.5rem;
     margin-bottom: 1rem;
+    display: inline-block;
+    margin-left: 15px;
 }
 
 .page-selector {
@@ -181,11 +232,11 @@ input[type="text"]:focus, input[type="number"]:focus {
 }
 
 .page-selector button:hover:not(.bg-primary-500) {
-    background-color: #dee2e6;
+    background-color: var(--mid-gray);
 }
 
 .page-selector button.bg-primary-500 {
-    background-color: #6c63ff;
+    background-color: var(--primary-color);
     color: white;
 }
 
@@ -197,39 +248,44 @@ input[type="text"]:focus, input[type="number"]:focus {
 /* 标签页样式 */
 .tab-wrapper {
     margin-top: 20px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
 }
 
 .tab-buttons {
     display: flex;
-    margin-bottom: 10px;
+    margin-bottom: 0;
     flex-wrap: wrap;
+    background-color: var(--mid-gray);
+    border-bottom: 1px solid var(--border-color);
 }
 
 .tab-button {
-    background-color: #e9ecef;
-    border: 1px solid #dee2e6;
-    padding: 10px 15px;
-    border-radius: 4px 4px 0 0;
+    background-color: transparent;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 0;
     cursor: pointer;
-    color: #495057;
-    transition: background-color 0.2s, color 0.2s;
+    color: var(--dark-gray);
+    transition: var(--transition);
+    font-weight: 500;
 }
 
 .tab-button.active {
     background-color: #fff;
-    border-bottom: 1px solid #fff;
-    color: #212529;
+    color: var(--primary-color);
+    box-shadow: inset 0 -3px 0 var(--primary-color);
 }
 
-.tab-button:hover {
-    background-color: #f0f0f0;
+.tab-button:hover:not(.active) {
+    background-color: #dcdfe6;
+    color: var(--primary-dark);
 }
 
 .tab-content {
     display: none;
-    border: 1px solid #dee2e6;
-    padding: 10px;
-    border-top: none;
+    padding: 20px;
 }
 
 .tab-content.active {
@@ -242,6 +298,7 @@ input[type="text"]:focus, input[type="number"]:focus {
     gap: 10px;
     margin-bottom: 20px;
     flex-wrap: wrap;
+    align-items: flex-end;
 }
 
 .add-new > input {
@@ -251,11 +308,14 @@ input[type="text"]:focus, input[type="number"]:focus {
 
 .add-new > button {
     flex-basis: 100%;
+    padding: 12px;
+    font-weight: 500;
 }
 
 @media (min-width: 768px) {
     .add-new > button {
         flex-basis: auto;
+        white-space: nowrap;
     }
 }
 
@@ -266,6 +326,12 @@ input[type="text"]:focus, input[type="number"]:focus {
     margin-bottom: 20px;
     justify-content: flex-end;
     flex-wrap: wrap;
+}
+
+.import-export button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
 }
 
 /* 模态框样式 */
@@ -279,44 +345,68 @@ input[type="text"]:focus, input[type="number"]:focus {
     height: 100%;
     overflow: auto;
     background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(2px);
+    opacity: 0;
+    visibility: hidden;
+    transition: var(--transition);
+}
+
+.modal.show {
+    opacity: 1;
+    visibility: visible;
 }
 
 .modal-content {
     background-color: #fff;
     margin: 10% auto;
-    padding: 20px;
-    border: 1px solid #dee2e6;
+    padding: 25px;
+    border: 1px solid var(--border-color);
     width: 80%;
     max-width: 600px;
     border-radius: 8px;
     position: relative;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+    transform: translateY(20px);
+    transition: transform 0.3s ease;
+}
+
+.modal.show .modal-content {
+    transform: translateY(0);
 }
 
 .modal-close {
     color: #6c757d;
     position: absolute;
-    right: 10px;
-    top: 0;
-    font-size: 28px;
+    right: 15px;
+    top: 15px;
+    font-size: 24px;
     font-weight: bold;
     cursor: pointer;
-    transition: color 0.2s;
+    transition: var(--transition);
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
 }
 
 .modal-close:hover {
-    color: #343a40;
+    color: var(--danger-color);
+    background-color: #f1f1f1;
 }
 
 .modal-content form {
     display: flex;
     flex-direction: column;
+    gap: 15px;
 }
 
 .modal-content form label {
     margin-bottom: 5px;
     font-weight: 500;
-    color: #495057;
+    color: var(--dark-gray);
+    display: block;
 }
 
 /* 消息提示样式 */
@@ -324,6 +414,14 @@ input[type="text"]:focus, input[type="number"]:focus {
     padding: 1rem;
     border-radius: 0.5rem;
     margin-bottom: 1rem;
+    text-align: center;
+    font-weight: 500;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .success {
@@ -339,16 +437,89 @@ input[type="text"]:focus, input[type="number"]:focus {
 /* 操作列样式 */
 .actions {
     display: flex;
-    gap: 5px;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 
 .actions button {
-    padding: 5px 8px;
+    padding: 6px 10px;
+    font-size: 0.85rem;
+}
+
+/* 分类标签样式 */
+.catalog-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
     font-size: 0.8rem;
+    font-weight: 500;
+    color: #fff;
+    background-color: var(--primary-light);
+    margin-right: 5px;
+    margin-bottom: 5px;
+}
+
+/* 搜索框样式 */
+#searchInput {
+    padding: 10px 15px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+    width: 100%;
+    max-width: 400px;
+    margin-bottom: 15px;
+    transition: var(--transition);
+}
+
+#searchInput:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(108, 99, 255, 0.25);
+}
+
+/* 表格工具栏 */
+.table-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .container {
+        padding: 15px;
+    }
+    
+    th, td {
+        padding: 8px 10px;
+        font-size: 0.9rem;
+    }
+    
+    .actions button {
+        padding: 4px 8px;
+        font-size: 0.8rem;
+    }
+    
+    .add-new {
+        gap: 8px;
+    }
+    
+    .tab-button {
+        padding: 10px 15px;
+        font-size: 0.9rem;
+    }
 }
 `;
 
-// 管理员页面 HTML
+// 管理员页面 HTML - 优化版
 const adminHtml = `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -356,53 +527,57 @@ const adminHtml = `<!DOCTYPE html>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>书签管理页面</title>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>${allStyles}</style>
 </head>
 <body>
   <div class="container">
-      <h1>书签管理</h1>
+      <h1><i class="fas fa-bookmark"></i> 书签管理</h1>
   
       <div class="import-export">
         <input type="file" id="importFile" accept=".json" style="display:none;">
-        <button id="importBtn">导入</button>
-        <button id="exportBtn">导出</button>
+        <button id="importBtn"><i class="fas fa-upload"></i> 导入</button>
+        <button id="exportBtn"><i class="fas fa-download"></i> 导出</button>
       </div>
   
       <!-- 添加区域 -->
       <div class="add-new">
-        <input type="text" id="addName" placeholder="Name" required>
+        <input type="text" id="addName" placeholder="名称" required>
         <input type="text" id="addUrl" placeholder="URL" required>
-        <input type="text" id="addLogo" placeholder="Logo(optional)">
-        <input type="text" id="addDesc" placeholder="Description(optional)">
-        <input type="text" id="addCatelog" placeholder="Catelog" required>
+        <input type="text" id="addLogo" placeholder="Logo(可选)">
+        <input type="text" id="addDesc" placeholder="描述(可选)">
+        <input type="text" id="addCatelog" placeholder="分类" required>
         <input type="number" id="addSortOrder" placeholder="排序 (数字小靠前)">
-        <button id="addBtn">添加</button>
+        <button id="addBtn"><i class="fas fa-plus"></i> 添加</button>
       </div>
       <div id="message" style="display: none;"></div>
       
       <div class="tab-wrapper">
           <div class="tab-buttons">
-             <button class="tab-button active" data-tab="config">书签列表</button>
-             <button class="tab-button" data-tab="pending">待审核列表</button>
+             <button class="tab-button active" data-tab="config"><i class="fas fa-list"></i> 书签列表</button>
+             <button class="tab-button" data-tab="pending"><i class="fas fa-clock"></i> 待审核列表</button>
           </div>
           
           <div id="config" class="tab-content active">
-              <!-- 分类筛选 -->
-              <div class="config-filter">
-                  <select id="configCatalogFilter" class="form-select">
-                      <option value="">所有分类</option>
-                  </select>
-              </div>
-              
-              <!-- 每页显示数量选择 -->
-              <div class="page-size-selector">
-                  <label for="pageSizeSelect">每页显示: </label>
-                  <select id="pageSizeSelect" class="form-select inline-block w-auto">
-                      <option value="10">10条</option>
-                      <option value="20">20条</option>
-                      <option value="50">50条</option>
-                      <option value="100">100条</option>
-                  </select>
+              <!-- 表格工具栏 -->
+              <div class="table-toolbar">
+                  <div class="filter-group">
+                      <div class="config-filter">
+                          <select id="configCatalogFilter" class="form-select">
+                              <option value="">所有分类</option>
+                          </select>
+                      </div>
+                      <div class="page-size-selector">
+                          <label for="pageSizeSelect">每页显示: </label>
+                          <select id="pageSizeSelect" class="form-select inline-block w-auto">
+                              <option value="10">10条</option>
+                              <option value="20">20条</option>
+                              <option value="50">50条</option>
+                              <option value="100">100条</option>
+                          </select>
+                      </div>
+                  </div>
+                  <input type="text" id="searchInput" placeholder="搜索书签(名称，URL，分类)">
               </div>
               
               <div class="table-wrapper">
@@ -410,13 +585,13 @@ const adminHtml = `<!DOCTYPE html>
                       <thead>
                           <tr>
                             <th>ID</th>
-                            <th>Name</th>
+                            <th>名称</th>
                             <th>URL</th>
                             <th>Logo</th>
-                            <th>Description</th>
-                            <th>Catelog</th>
+                            <th>描述</th>
+                            <th>分类</th>
                             <th>排序</th>
-                            <th>Actions</th>
+                            <th>操作</th>
                           </tr>
                       </thead>
                       <tbody id="configTableBody">
@@ -424,9 +599,9 @@ const adminHtml = `<!DOCTYPE html>
                       </tbody>
                   </table>
                   <div class="pagination">
-                        <button id="prevPage" disabled>上一页</button>
+                        <button id="prevPage" disabled><i class="fas fa-chevron-left"></i> 上一页</button>
                         <span id="currentPage">1</span>/<span id="totalPages">1</span>
-                        <button id="nextPage" disabled>下一页</button>
+                        <button id="nextPage" disabled>下一页 <i class="fas fa-chevron-right"></i></button>
                   </div>
              </div>
           </div>
@@ -437,12 +612,12 @@ const adminHtml = `<!DOCTYPE html>
                   <thead>
                     <tr>
                         <th>ID</th>
-                         <th>Name</th>
+                         <th>名称</th>
                          <th>URL</th>
                         <th>Logo</th>
-                        <th>Description</th>
-                        <th>Catelog</th>
-                        <th>Actions</th>
+                        <th>描述</th>
+                        <th>分类</th>
+                        <th>操作</th>
                     </tr>
                     </thead>
                     <tbody id="pendingTableBody">
@@ -450,9 +625,9 @@ const adminHtml = `<!DOCTYPE html>
                     </tbody>
                 </table>
                  <div class="pagination">
-                  <button id="pendingPrevPage" disabled>上一页</button>
+                  <button id="pendingPrevPage" disabled><i class="fas fa-chevron-left"></i> 上一页</button>
                    <span id="pendingCurrentPage">1</span>/<span id="pendingTotalPages">1</span>
-                  <button id="pendingNextPage" disabled>下一页</button>
+                  <button id="pendingNextPage" disabled>下一页 <i class="fas fa-chevron-right"></i></button>
                 </div>
              </div>
            </div>
@@ -462,8 +637,8 @@ const adminHtml = `<!DOCTYPE html>
   <!-- 编辑模态框 -->
   <div class="modal" id="editModal">
     <div class="modal-content">
-      <span class="modal-close">×</span>
-      <h2>编辑站点</h2>
+      <span class="modal-close">&times;</span>
+      <h2><i class="fas fa-edit"></i> 编辑站点</h2>
       <form id="editForm">
         <input type="hidden" id="editId">
         <label for="editName">名称:</label>
@@ -478,7 +653,7 @@ const adminHtml = `<!DOCTYPE html>
         <input type="text" id="editCatelog" required><br>
         <label for="editSortOrder">排序:</label>
         <input type="number" id="editSortOrder"><br>
-        <button type="submit">保存</button>
+        <button type="submit"><i class="fas fa-save"></i> 保存</button>
       </form>
     </div>
   </div>
@@ -541,26 +716,18 @@ const adminHtml = `<!DOCTYPE html>
         });
     });
     
-    // 添加搜索框
-    const searchInput = document.createElement('input');
-    searchInput.type = 'text';
-    searchInput.placeholder = '搜索书签(名称，URL，分类)';
-    searchInput.id = 'searchInput';
-    searchInput.style.marginBottom = '10px';
-    document.querySelector('.add-new').parentNode.insertBefore(searchInput, document.querySelector('.add-new'));
-    
     // 编辑模态框控制
     const editModal = document.getElementById('editModal');
     const modalClose = editModal.querySelector('.modal-close');
     
     modalClose.addEventListener('click', () => {
-        editModal.style.display = 'none';
+        editModal.classList.remove('show');
     });
     
     // 点击模态框外部关闭
     window.addEventListener('click', (e) => {
         if (e.target === editModal) {
-            editModal.style.display = 'none';
+            editModal.classList.remove('show');
         }
     });
     
@@ -585,7 +752,7 @@ const adminHtml = `<!DOCTYPE html>
             if (data.code === 200) {
                 showMessage('修改成功', 'success');
                 fetchConfigs();
-                editModal.style.display = 'none';
+                editModal.classList.remove('show');
             } else {
                 showMessage(data.message, 'error');
             }
@@ -645,7 +812,7 @@ const adminHtml = `<!DOCTYPE html>
             });
     };
     
-    // 渲染配置表格
+    // 渲染配置表格 - 优化分类显示
     function renderConfig(configs) {
         configTableBody.innerHTML = '';
         if (configs.length === 0) {
@@ -655,17 +822,18 @@ const adminHtml = `<!DOCTYPE html>
         
         configs.forEach(config => {
             const row = document.createElement('tr');
+            // 将分类显示为标签样式，不再单独占行
             row.innerHTML = \`
                 <td>\${config.id}</td>
                 <td>\${config.name}</td>
-                <td><a href="\${config.url}" target="_blank">\${config.url}</a></td>
-                <td>\${config.logo ? \`<img src="\${config.logo}" style="width:30px;" />\` : 'N/A'}</td>
+                <td><a href="\${config.url}" target="_blank" class="text-primary-color hover:underline">\${config.url}</a></td>
+                <td>\${config.logo ? \`<img src="\${config.logo}" style="width:30px;height:30px;object-fit:contain;" alt="\${config.name} logo"/>\` : 'N/A'}</td>
                 <td>\${config.desc || 'N/A'}</td>
-                <td>\${config.catelog}</td>
+                <td><span class="catalog-badge">\${config.catelog}</span></td>
                 <td>\${config.sort_order === 9999 ? '默认' : config.sort_order}</td>
                 <td class="actions">
-                    <button class="edit-btn" data-id="\${config.id}">编辑</button>
-                    <button class="del-btn" data-id="\${config.id}">删除</button>
+                    <button class="edit-btn" data-id="\${config.id}"><i class="fas fa-edit"></i> 编辑</button>
+                    <button class="del-btn" data-id="\${config.id}"><i class="fas fa-trash"></i> 删除</button>
                 </td>
             \`;
             configTableBody.appendChild(row);
@@ -710,7 +878,7 @@ const adminHtml = `<!DOCTYPE html>
             document.getElementById('editCatelog').value = configToEdit.catelog;
             document.getElementById('editSortOrder').value = configToEdit.sort_order === 9999 ? '' : configToEdit.sort_order;
             
-            editModal.style.display = 'block';
+            editModal.classList.add('show');
         });
     }
     
@@ -928,8 +1096,8 @@ const adminHtml = `<!DOCTYPE html>
     });
     
     // 搜索功能
-    searchInput.addEventListener('input', () => {
-        currentSearchKeyword = searchInput.value.trim();
+    document.getElementById('searchInput').addEventListener('input', () => {
+        currentSearchKeyword = document.getElementById('searchInput').value.trim();
         currentPage = 1;
         fetchConfigs(currentPage, currentSearchKeyword);
     });
@@ -967,13 +1135,13 @@ const adminHtml = `<!DOCTYPE html>
             row.innerHTML = \`
                 <td>\${config.id}</td>
                 <td>\${config.name}</td>
-                <td><a href="\${config.url}" target="_blank">\${config.url}</a></td>
-                <td>\${config.logo ? \`<img src="\${config.logo}" style="width:30px;" />\` : 'N/A'}</td>
+                <td><a href="\${config.url}" target="_blank" class="text-primary-color hover:underline">\${config.url}</a></td>
+                <td>\${config.logo ? \`<img src="\${config.logo}" style="width:30px;height:30px;object-fit:contain;" alt="\${config.name} logo"/>\` : 'N/A'}</td>
                 <td>\${config.desc || 'N/A'}</td>
-                <td>\${config.catelog}</td>
+                <td><span class="catalog-badge">\${config.catelog}</span></td>
                 <td class="actions">
-                    <button class="approve-btn" data-id="\${config.id}">批准</button>
-                    <button class="reject-btn" data-id="\${config.id}">拒绝</button>
+                    <button class="edit-btn approve-btn" data-id="\${config.id}"><i class="fas fa-check"></i> 批准</button>
+                    <button class="del-btn reject-btn" data-id="\${config.id}"><i class="fas fa-times"></i> 拒绝</button>
                 </td>
             \`;
             pendingTableBody.appendChild(row);
@@ -1058,7 +1226,7 @@ const adminHtml = `<!DOCTYPE html>
 </body>
 </html>`;
 
-// 登录页面 HTML
+// 登录页面 HTML - 优化版
 const loginHtml = `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -1066,78 +1234,249 @@ const loginHtml = `<!DOCTYPE html>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>管理员登录</title>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
-  <style>${allStyles}</style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
+    :root {
+      --primary-color: #6c63ff;
+      --primary-light: #8a7fff;
+      --primary-dark: #534dc4;
+      --bg-color: #f5f7fa;
+      --card-bg: #ffffff;
+      --text-primary: #333333;
+      --text-secondary: #666666;
+      --border-color: #e0e0e0;
+      --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      --transition: all 0.3s ease;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Noto Sans SC', sans-serif;
+      background-color: var(--bg-color);
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(108, 99, 255, 0.05) 0%, transparent 20%),
+        radial-gradient(circle at 90% 80%, rgba(108, 99, 255, 0.05) 0%, transparent 20%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
     .login-container {
-      max-width: 380px;
-      margin: 50px auto;
-      padding: 2rem;
-      background-color: white;
-      border-radius: 8px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 400px;
+      background-color: var(--card-bg);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      transition: var(--transition);
+    }
+    
+    .login-container:hover {
+      box-shadow: 0 8px 30px rgba(108, 99, 255, 0.12);
+    }
+    
+    .login-header {
+      background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+      color: white;
+      padding: 30px 20px;
+      text-align: center;
     }
     
     .login-title {
-      font-size: 1.75rem;
+      font-size: 1.8rem;
       font-weight: 700;
-      text-align: center;
-      margin-bottom: 1.5rem;
-      color: #333;
+      margin-bottom: 8px;
+    }
+    
+    .login-subtitle {
+      font-size: 0.95rem;
+      opacity: 0.9;
+      font-weight: 400;
+    }
+    
+    .login-body {
+      padding: 30px 25px;
     }
     
     .form-group {
-      margin-bottom: 1.25rem;
+      margin-bottom: 20px;
     }
     
     label {
       display: block;
-      margin-bottom: 0.5rem;
+      margin-bottom: 8px;
       font-weight: 500;
-      color: #555;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+    
+    input[type="text"],
+    input[type="password"] {
+      width: 100%;
+      padding: 12px 15px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      font-size: 1rem;
+      transition: var(--transition);
+      font-family: inherit;
+    }
+    
+    input[type="text"]:focus,
+    input[type="password"]:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.1);
+      outline: none;
+    }
+    
+    .error-message {
+      color: #dc3545;
+      font-size: 0.85rem;
+      margin-top: 5px;
+      height: 20px;
+      display: none;
+    }
+    
+    .error-message.show {
+      display: block;
+    }
+    
+    button {
+      width: 100%;
+      padding: 13px;
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    
+    button:hover {
+      background-color: var(--primary-dark);
+      transform: translateY(-2px);
+    }
+    
+    button:active {
+      transform: translateY(0);
     }
     
     .back-link {
       display: block;
       text-align: center;
-      margin-top: 1.5rem;
-      color: #6c63ff;
+      margin-top: 20px;
+      color: var(--primary-color);
       text-decoration: none;
-      font-size: 0.875rem;
+      font-size: 0.9rem;
+      transition: var(--transition);
     }
     
     .back-link:hover {
       text-decoration: underline;
+      color: var(--primary-dark);
+    }
+    
+    .form-footer {
+      margin-top: 15px;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
     }
   </style>
 </head>
 <body>
   <div class="login-container">
-    <h1 class="login-title">管理员登录</h1>
-    <form id="loginForm">
-      <div class="form-group">
-        <label for="username">用户名</label>
-        <input type="text" id="username" name="username" required>
-      </div>
-      <div class="form-group">
-        <label for="password">密码</label>
-        <input type="password" id="password" name="password" required>
-      </div>
-      <div class="error-message" id="errorMessage">用户名或密码错误</div>
-      <button type="submit">登 录</button>
-    </form>
-    <a href="/" class="back-link">返回首页</a>
+    <div class="login-header">
+      <h1 class="login-title"><i class="fas fa-shield-alt"></i> 管理员登录</h1>
+      <p class="login-subtitle">请输入您的账号和密码以访问管理后台</p>
+    </div>
+    <div class="login-body">
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="username"><i class="fas fa-user"></i> 用户名</label>
+          <input type="text" id="username" name="username" required>
+          <div class="error-message" id="usernameError">请输入用户名</div>
+        </div>
+        <div class="form-group">
+          <label for="password"><i class="fas fa-lock"></i> 密码</label>
+          <input type="password" id="password" name="password" required>
+          <div class="error-message" id="passwordError">请输入密码</div>
+        </div>
+        <div class="error-message show" id="loginError">用户名或密码错误</div>
+        <button type="submit"><i class="fas fa-sign-in-alt"></i> 登 录</button>
+        <div class="form-footer">
+          保护您的账户安全，请勿向他人泄露密码
+        </div>
+      </form>
+      <a href="/" class="back-link"><i class="fas fa-arrow-left"></i> 返回首页</a>
+    </div>
   </div>
   
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       const loginForm = document.getElementById('loginForm');
-      const errorMessage = document.getElementById('errorMessage');
+      const usernameInput = document.getElementById('username');
+      const passwordInput = document.getElementById('password');
+      const usernameError = document.getElementById('usernameError');
+      const passwordError = document.getElementById('passwordError');
+      const loginError = document.getElementById('loginError');
+      
+      // 隐藏初始错误提示
+      loginError.style.display = 'none';
+      
+      // 输入验证
+      usernameInput.addEventListener('blur', function() {
+        if (!this.value.trim()) {
+          usernameError.classList.add('show');
+        } else {
+          usernameError.classList.remove('show');
+        }
+      });
+      
+      passwordInput.addEventListener('blur', function() {
+        if (!this.value.trim()) {
+          passwordError.classList.add('show');
+        } else {
+          passwordError.classList.remove('show');
+        }
+      });
       
       loginForm.addEventListener('submit', function(e) {
         e.preventDefault();
+        let isValid = true;
         
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
+        // 验证输入
+        if (!usernameInput.value.trim()) {
+          usernameError.classList.add('show');
+          isValid = false;
+        } else {
+          usernameError.classList.remove('show');
+        }
+        
+        if (!passwordInput.value.trim()) {
+          passwordError.classList.add('show');
+          isValid = false;
+        } else {
+          passwordError.classList.remove('show');
+        }
+        
+        if (!isValid) return;
+        
+        // 提交表单
+        const username = usernameInput.value;
+        const password = passwordInput.value;
         
         window.location.href = '/admin?name=' + encodeURIComponent(username) + '&password=' + encodeURIComponent(password);
       });
@@ -1157,6 +1496,7 @@ function generateMainHtml(sites, catalogs, currentCatalog) {
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet"/>
     <link rel="icon" href="https://www.wangwangit.com/images/head/a.webp" type="image/webp"/>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script>
       tailwind.config = {
         theme: {
@@ -1273,6 +1613,19 @@ function generateMainHtml(sites, catalogs, currentCatalog) {
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
         overflow: hidden;
+      }
+      
+      /* 分类标签样式 */
+      .catalog-tag {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        margin-right: 5px;
+        margin-bottom: 5px;
+        background-color: rgba(108, 99, 255, 0.1);
+        color: #6c63ff;
       }
     </style>
   </head>
@@ -1399,9 +1752,7 @@ function generateMainHtml(sites, catalogs, currentCatalog) {
                 </div>
                     <div class="flex-1 min-w-0">
                       <h3 class="text-base font-medium text-gray-900 truncate">${site.name}</h3>
-                      <span class="inline-flex items-center px-2 py-0.5 mt-1 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
-                        ${site.catelog}
-                      </span>
+                      <span class="catalog-tag">${site.catelog}</span>
                     </div>
                   </div>
                   
@@ -1710,7 +2061,7 @@ function generateMainHtml(sites, catalogs, currentCatalog) {
       });
     </script>
   </body>
-  </html>`;
+</html>`;
 }
 
 // API 处理
@@ -2015,7 +2366,7 @@ const api = {
         env.NAV_DB.prepare(`
           INSERT INTO sites (name, url, logo, desc, catelog, sort_order)
           VALUES (?, ?, ?, ?, ?, ?)
-        `).bind(item.name || null, item.url || null, item.logo || null, item.desc || null, item.catelog || null, item.sort_order || 9999)
+        `)。bind(item。name || null, item.url || null, item.logo || null, item.desc || null, item.catelog || null, item.sort_order || 9999)
       );
 
       await env.NAV_DB.batch(insertStatements);
@@ -2072,70 +2423,3 @@ const admin = {
 
       // 从KV中获取凭据
       const storedUsername = await env.NAV_AUTH.get("admin_username");
-      const storedPassword = await env.NAV_AUTH.get("admin_password");
-
-      if (name === storedUsername && password === storedPassword) {
-        return new Response(adminHtml, {
-          headers: {'Content-Type': 'text/html; charset=utf-8'}
-        });
-      } else if (name || password) {
-        return new Response('未授权访问', {
-          status: 403,
-          headers: { 'Content-Type': 'text/html; charset=utf-8' }
-        });
-      } else {
-        return new Response(loginHtml, {
-          headers: { 'Content-Type': 'text/html; charset=utf-8' }
-        });
-      }
-    }
-    
-    return new Response('页面不存在', {status: 404});
-  }
-};
-
-// 主处理函数
-async function handleRequest(request, env, ctx) {
-  const url = new URL(request.url);
-  
-  // API请求处理
-  if (url.pathname.startsWith('/api')) {
-    return api.handleRequest(request, env, ctx);
-  }
-  
-  // 管理员页面处理
-  if (url.pathname === '/admin') {
-    return admin.handleRequest(request, env, ctx);
-  }
-  
-  // 主页面处理
-  const catalog = url.searchParams.get('catalog');
-  let sites = [];
-  
-  try {
-    const { results } = await env.NAV_DB.prepare('SELECT * FROM sites ORDER BY sort_order ASC, create_time DESC').all();
-    sites = results;
-  } catch (e) {
-    return new Response(`Failed to fetch data: ${e.message}`, { status: 500 });
-  }
-
-  if (!sites || sites.length === 0) {
-    return new Response('No site configuration found.', { status: 404 });
-  }
-
-  // 获取所有分类
-  const catalogs = Array.from(new Set(sites.map(s => s.catelog)));
-  
-  // 根据URL参数筛选站点
-  const currentCatalog = catalog || '';
-  const currentSites = catalog ? sites.filter(s => s.catelog === currentCatalog) : sites;
-  
-  // 生成并返回主页面HTML
-  const html = generateMainHtml(currentSites, catalogs, currentCatalog);
-  return new Response(html, {
-    headers: { 'content-type': 'text/html; charset=utf-8' }
-  });
-}
-
-// 导出工作器
-export default { fetch: handleRequest };
